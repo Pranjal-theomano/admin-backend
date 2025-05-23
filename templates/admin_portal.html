@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='images/image.png') }}" type="image/x-icon">
+</head>
+
+<body style="overflow-y: auto; margin: 5px; background-color: #EDF6F3;">
+    <div class="container-fluid vh-100 p-4">
+        <h1 class="text-center mt-3">Welcome to Admin Portal!</h1>
+        
+        <!-- Add navigation button -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <a href="/database_view?page=1&per_page=25" class="btn btn-primary">View Database Records</a>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label for="daySelect" class="form-label">Select Number of Days:</label>
+                <select id="daySelect" class="form-select" onchange="updateStats()" style="width: 80%;">
+                    <option value="1">Last 1 day</option>
+                    <option value="7">Last 7 days</option>
+                    <option value="10">Last 10 days</option>
+                    <option value="20">Last 20 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="60">Last 60 days</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h2 class="h4 mb-0">Proposal Statistics</h2>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Total Proposals</td>
+                                    <td>{{ stats.total_proposals }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Successful Proposals</td>
+                                    <td>{{ stats.successful_proposals }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Unsuccessful Proposals</td>
+                                    <td>{{ stats.unsuccessful_proposals }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Average Processing Time</td>
+                                    <td>{{ "%.1f"|format(stats.avg_processing_time|float) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>P90 Processing Time</td>
+                                    <td>{{ "%.1f"|format(stats.p90_processing_time|float) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>P95 Processing Time</td>
+                                    <td>{{ "%.1f"|format(stats.p95_processing_time|float) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Pass Yield</td>
+                                    <td>{{ "%.1f"|format(stats.pass_yield|float) }}%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h2 class="h4 mb-0">Proposal Details</h2>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="proposalChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        let chart;  // Declare chart variable globally
+
+        // Add this code to set the selected value
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const days = urlParams.get('days') || '1';
+            const page = urlParams.get('page') || '1';
+            const per_page = urlParams.get('per_page') || '50';
+            document.getElementById('daySelect').value = days;
+        });
+
+        function getChartConfig(successfulProposals, unsuccessfulProposals) {
+            return {
+                type: 'bar',
+                data: {
+                    labels: ['Successful Proposals', 'Unsuccessful Proposals'],
+                    datasets: [{
+                        data: [successfulProposals, unsuccessfulProposals],
+                        backgroundColor: [
+                            '#008080',
+                            '#b5d8cc'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            };
+        }
+
+        // Initial chart creation
+        const ctx = document.getElementById('proposalChart').getContext('2d');
+        chart = new Chart(ctx, getChartConfig({{ stats.successful_proposals }}, {{ stats.unsuccessful_proposals }}));
+
+        function updateStats() {
+            const days = document.getElementById('daySelect').value;
+            const urlParams = new URLSearchParams(window.location.search);
+            const page = urlParams.get('page') || '1';
+            const per_page = urlParams.get('per_page') || '50';
+            window.location.href = `/v1_admin_portal?days=${days}&page=${page}&per_page=${per_page}`;
+        }
+    </script>
+</body>
+
+</html>

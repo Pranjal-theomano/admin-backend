@@ -1,0 +1,10 @@
+flask==3.0.0
+requests==2.31.0
+openai
+flask-socketio
+flask_cors
+aiohttp
+pymongo
+boto3
+Pillow
+PyMuPDF
